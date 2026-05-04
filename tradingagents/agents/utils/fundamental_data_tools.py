@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from typing import Annotated
 from tradingagents.dataflows.interface import route_to_vendor
+from tradingagents.dataflows.market_utils import apply_market_suffix
 
 
 @tool
@@ -17,7 +18,7 @@ def get_fundamentals(
     Returns:
         str: A formatted report containing comprehensive fundamental data
     """
-    return route_to_vendor("get_fundamentals", ticker, curr_date)
+    return route_to_vendor("get_fundamentals", apply_market_suffix(ticker), curr_date)
 
 
 @tool
@@ -36,7 +37,7 @@ def get_balance_sheet(
     Returns:
         str: A formatted report containing balance sheet data
     """
-    return route_to_vendor("get_balance_sheet", ticker, freq, curr_date)
+    return route_to_vendor("get_balance_sheet", apply_market_suffix(ticker), freq, curr_date)
 
 
 @tool
@@ -55,7 +56,7 @@ def get_cashflow(
     Returns:
         str: A formatted report containing cash flow statement data
     """
-    return route_to_vendor("get_cashflow", ticker, freq, curr_date)
+    return route_to_vendor("get_cashflow", apply_market_suffix(ticker), freq, curr_date)
 
 
 @tool
@@ -74,4 +75,4 @@ def get_income_statement(
     Returns:
         str: A formatted report containing income statement data
     """
-    return route_to_vendor("get_income_statement", ticker, freq, curr_date)
+    return route_to_vendor("get_income_statement", apply_market_suffix(ticker), freq, curr_date)

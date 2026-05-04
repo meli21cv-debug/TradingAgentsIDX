@@ -12,9 +12,9 @@ DEFAULT_CONFIG = {
     # Pending entries are never pruned. None disables rotation entirely.
     "memory_log_max_entries": None,
     # LLM settings
-    "llm_provider": "openai",
-    "deep_think_llm": "gpt-5.4",
-    "quick_think_llm": "gpt-5.4-mini",
+    "llm_provider": "deepseek",
+    "deep_think_llm": "deepseek-v4-pro",
+    "quick_think_llm": "deepseek-v4-flash",
     # When None, each provider's client falls back to its own default endpoint
     # (api.openai.com for OpenAI, generativelanguage.googleapis.com for Gemini, ...).
     # The CLI overrides this per provider when the user picks one. Keeping a
@@ -30,7 +30,11 @@ DEFAULT_CONFIG = {
     "checkpoint_enabled": False,
     # Output language for analyst reports and final decision
     # Internal agent debate stays in English for reasoning quality
-    "output_language": "English",
+    "output_language": "Indonesian",
+    # Market hint for news/ticker handling. "ID" applies the .JK suffix to
+    # bare IDX tickers and uses Bahasa Indonesia queries for macro news.
+    # Set to None to disable market-specific behavior.
+    "market": "ID",
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
@@ -41,7 +45,7 @@ DEFAULT_CONFIG = {
         "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance
         "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance
         "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance
-        "news_data": "yfinance",             # Options: alpha_vantage, yfinance
+        "news_data": "google_news_id,yfinance",  # Options: google_news_id, alpha_vantage, yfinance
     },
     # Tool-level configuration (takes precedence over category-level)
     "tool_vendors": {

@@ -1,6 +1,7 @@
 from langchain_core.tools import tool
 from typing import Annotated
 from tradingagents.dataflows.interface import route_to_vendor
+from tradingagents.dataflows.market_utils import apply_market_suffix
 
 @tool
 def get_indicators(
@@ -23,6 +24,7 @@ def get_indicators(
     # LLMs sometimes pass multiple indicators as a comma-separated string;
     # split and process each individually.
     indicators = [i.strip().lower() for i in indicator.split(",") if i.strip()]
+    symbol = apply_market_suffix(symbol)
     results = []
     for ind in indicators:
         try:

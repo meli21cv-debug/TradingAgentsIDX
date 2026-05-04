@@ -5,6 +5,7 @@ from datetime import datetime
 from dateutil.relativedelta import relativedelta
 
 from .stockstats_utils import yf_retry
+from .market_utils import apply_market_suffix, global_news_queries
 
 
 def _extract_article_data(article: dict) -> dict:
@@ -65,7 +66,8 @@ def get_news_yfinance(
         Formatted string containing news articles
     """
     try:
-        stock = yf.Ticker(ticker)
+        resolved = apply_market_suffix(ticker)
+        stock = yf.Ticker(resolved)
         news = yf_retry(lambda: stock.get_news(count=20))
 
         if not news:
@@ -120,13 +122,8 @@ def get_global_news_yfinance(
     Returns:
         Formatted string containing global news articles
     """
-    # Search queries for macro/global news
-    search_queries = [
-        "stock market economy",
-        "Federal Reserve interest rates",
-        "inflation economic outlook",
-        "global markets trading",
-    ]
+    # Search queries for macro/global news (market-aware)
+    search_queries = global_news_queries()
 
     all_news = []
     seen_titles = set()

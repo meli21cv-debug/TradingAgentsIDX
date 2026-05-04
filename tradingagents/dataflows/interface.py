@@ -11,6 +11,7 @@ from .y_finance import (
     get_insider_transactions as get_yfinance_insider_transactions,
 )
 from .yfinance_news import get_news_yfinance, get_global_news_yfinance
+from .google_news_id import get_news_google_id, get_global_news_google_id
 from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
     get_indicator as get_alpha_vantage_indicator,
@@ -63,6 +64,7 @@ TOOLS_CATEGORIES = {
 VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
+    "google_news_id",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -96,10 +98,12 @@ VENDOR_METHODS = {
     },
     # news_data
     "get_news": {
+        "google_news_id": get_news_google_id,
         "alpha_vantage": get_alpha_vantage_news,
         "yfinance": get_news_yfinance,
     },
     "get_global_news": {
+        "google_news_id": get_global_news_google_id,
         "yfinance": get_global_news_yfinance,
         "alpha_vantage": get_alpha_vantage_global_news,
     },

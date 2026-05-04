@@ -36,11 +36,20 @@ def get_language_instruction() -> str:
 
 def build_instrument_context(ticker: str) -> str:
     """Describe the exact instrument so agents preserve exchange-qualified tickers."""
-    return (
+    from tradingagents.dataflows.config import get_config
+    base = (
         f"The instrument to analyze is `{ticker}`. "
         "Use this exact ticker in every tool call, report, and recommendation, "
-        "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`)."
+        "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`, `.JK`)."
     )
+    if (get_config().get("market") or "").upper() == "ID":
+        base += (
+            " This is an Indonesian (IDX) stock. When news searches return little, "
+            "retry with Bahasa Indonesia keywords (e.g. 'saham', 'IHSG', 'laba bersih', "
+            "'dividen', the company's Indonesian name) and consider the bare ticker "
+            "without the `.JK` suffix as a search term."
+        )
+    return base
 
 def create_msg_delete():
     def delete_messages(state):

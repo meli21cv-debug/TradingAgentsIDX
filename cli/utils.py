@@ -193,12 +193,13 @@ def _select_model(provider: str, mode: str) -> str:
             validate=lambda x: len(x.strip()) > 0 or "Please enter a deployment name.",
         ).ask().strip()
 
+    model_choices = [
+        questionary.Choice(display, value=value)
+        for display, value in get_model_options(provider, mode)
+    ]
     choice = questionary.select(
         f"Select Your [{mode.title()}-Thinking LLM Engine]:",
-        choices=[
-            questionary.Choice(display, value=value)
-            for display, value in get_model_options(provider, mode)
-        ],
+        choices=model_choices,
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style(
             [
@@ -232,11 +233,11 @@ def select_llm_provider() -> tuple[str, str | None]:
     """Select the LLM provider and its API endpoint."""
     # (display_name, provider_key, base_url)
     PROVIDERS = [
+        ("DeepSeek (default)", "deepseek", "https://api.deepseek.com"),
         ("OpenAI", "openai", "https://api.openai.com/v1"),
         ("Google", "google", None),
         ("Anthropic", "anthropic", "https://api.anthropic.com/"),
         ("xAI", "xai", "https://api.x.ai/v1"),
-        ("DeepSeek", "deepseek", "https://api.deepseek.com"),
         ("Qwen", "qwen", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
         ("GLM", "glm", "https://open.bigmodel.cn/api/paas/v4/"),
         ("OpenRouter", "openrouter", "https://openrouter.ai/api/v1"),
@@ -244,12 +245,13 @@ def select_llm_provider() -> tuple[str, str | None]:
         ("Ollama", "ollama", "http://localhost:11434/v1"),
     ]
 
+    provider_choices = [
+        questionary.Choice(display, value=(provider_key, url))
+        for display, provider_key, url in PROVIDERS
+    ]
     choice = questionary.select(
         "Select your LLM Provider:",
-        choices=[
-            questionary.Choice(display, value=(provider_key, url))
-            for display, provider_key, url in PROVIDERS
-        ],
+        choices=provider_choices,
         instruction="\n- Use arrow keys to navigate\n- Press Enter to select",
         style=questionary.Style(
             [
@@ -331,7 +333,8 @@ def ask_output_language() -> str:
     choice = questionary.select(
         "Select Output Language:",
         choices=[
-            questionary.Choice("English (default)", "English"),
+            questionary.Choice("Indonesian (Bahasa Indonesia) [default]", "Indonesian"),
+            questionary.Choice("English", "English"),
             questionary.Choice("Chinese (中文)", "Chinese"),
             questionary.Choice("Japanese (日本語)", "Japanese"),
             questionary.Choice("Korean (한국어)", "Korean"),
