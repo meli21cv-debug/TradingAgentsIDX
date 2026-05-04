@@ -617,6 +617,57 @@ def get_analysis_date():
             )
 
 
+def _extract_conclusion_via_llm(full_report: str, final_state: dict, llm=None) -> str:
+    """Use the quick-thinking LLM to read the last 100 lines of the report
+    and return a filename-safe conclusion suffix like 'BUY 5875' or 'HOLD'.
+
+    Falls back to the regex extractor when no LLM is supplied or the call
+    fails for any reason.
+    """
+    if llm is None:
+        return _extract_decision_summary(final_state)
+
+    tail = "\n".join(full_report.splitlines()[-100:])
+    instruction = (
+        "You will read the tail of a trading-analysis report. Extract:\n"
+        "1) The Portfolio Manager's RATING — exactly one of: BUY, OVERWEIGHT, "
+        "HOLD, UNDERWEIGHT, SELL.\n"
+        "2) If and only if the rating is BUY or OVERWEIGHT, the entry price "
+        "(a single number, no currency, no thousands separator).\n\n"
+        "Reply on ONE LINE in this exact format and nothing else:\n"
+        "RATING|PRICE_OR_DASH\n"
+        "Examples:\n"
+        "BUY|5875\n"
+        "HOLD|-\n"
+        "SELL|-\n"
+        "UNDERWEIGHT|-\n\n"
+        "Report tail:\n---\n" + tail
+    )
+    try:
+        result = llm.invoke(instruction)
+        text = (getattr(result, "content", None) or str(result)).strip()
+        # Take the first non-empty line, strip code fences if any.
+        line = next((ln.strip().strip("`").strip() for ln in text.splitlines() if ln.strip()), "")
+        if "|" not in line:
+            raise ValueError(f"unexpected format: {text!r}")
+        rating, price = line.split("|", 1)
+        rating = rating.strip().upper()
+        valid = {"BUY", "OVERWEIGHT", "HOLD", "UNDERWEIGHT", "SELL"}
+        if rating not in valid:
+            raise ValueError(f"invalid rating: {rating!r}")
+        price = price.strip()
+        if rating in {"BUY", "OVERWEIGHT"} and price and price != "-":
+            # Sanitize: digits, dot only.
+            import re as _re
+            cleaned = _re.sub(r"[^0-9.]", "", price).rstrip(".")
+            if cleaned:
+                return f"{rating} {cleaned}"
+        return rating
+    except Exception:
+        # Any failure (network, parsing, model hiccup) — fall back to regex.
+        return _extract_decision_summary(final_state)
+
+
 def _extract_decision_summary(final_state: dict) -> str:
     """Build a filename-safe conclusion suffix like 'BUY 5875' or 'HOLD'.
 
@@ -651,7 +702,7 @@ def _extract_decision_summary(final_state: dict) -> str:
     return rating
 
 
-def save_report_to_disk(final_state, ticker: str, save_path: Path):
+def save_report_to_disk(final_state, ticker: str, save_path: Path, llm=None):
     """Save complete analysis report to disk with organized subfolders."""
     save_path.mkdir(parents=True, exist_ok=True)
     sections = []
@@ -735,18 +786,22 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"], encoding="utf-8")
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
 
-    # Write consolidated report — name it "{TICKER} {DATE} {CONCLUSION}.md"
-    # where CONCLUSION is e.g. "BUY 5875", "HOLD", "SELL".
+    # Write consolidated report. Filename "{TICKER} {DATE} {CONCLUSION}.md"
+    # where CONCLUSION is extracted from the last 100 lines of the report by
+    # the quick-thinking LLM (more robust than regex against free-text PM
+    # outputs). Includes entry price for bullish ratings.
     header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
     analysis_date = final_state.get("trade_date") or datetime.datetime.now().strftime("%Y-%m-%d")
-    conclusion = _extract_decision_summary(final_state)
-    # Sanitize for filesystem: keep alphanumerics, dots, dashes, spaces.
+    full_report = header + "\n\n".join(sections)
+
+    conclusion = _extract_conclusion_via_llm(full_report, final_state, llm=llm)
+
     import re as _re
     safe_ticker = _re.sub(r"[^A-Za-z0-9._-]", "_", ticker)
-    safe_concl = _re.sub(r"[^A-Za-z0-9._\- ]", "_", conclusion).strip()
+    safe_concl = _re.sub(r"[^A-Za-z0-9._\- ]", "_", conclusion).strip() or "UNKNOWN"
     report_name = f"{safe_ticker} {analysis_date} {safe_concl}.md"
     report_path = save_path / report_name
-    report_path.write_text(header + "\n\n".join(sections), encoding="utf-8")
+    report_path.write_text(full_report, encoding="utf-8")
     return report_path
 
 
@@ -1256,7 +1311,12 @@ def run_analysis(checkpoint: bool = False):
     ))
     save_path = reports_root / f"{selections['ticker']}_{timestamp}"
     try:
-        report_file = save_report_to_disk(final_state, selections["ticker"], save_path)
+        report_file = save_report_to_disk(
+            final_state,
+            selections["ticker"],
+            save_path,
+            llm=getattr(graph, "quick_thinking_llm", None),
+        )
         console.print(f"\n[green]✓ Report saved to:[/green] {save_path.resolve()}")
         console.print(f"  [dim]Complete report:[/dim] {report_file.name}")
     except Exception as e:
