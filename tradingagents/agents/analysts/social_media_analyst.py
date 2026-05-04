@@ -4,6 +4,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_analyst_preamble,
     get_language_instruction,
     get_news,
+    get_news_lookback_days,
     get_total_word_cap,
 )
 from tradingagents.dataflows.config import get_config
@@ -19,9 +20,10 @@ def create_social_media_analyst(llm):
         ]
 
         total_word_cap = get_total_word_cap()
+        lookback_days = get_news_lookback_days()
         system_message = f"""You are the top Social Sentiment Analyst. Characterize the tone, intensity,
 and themes of secondary commentary about the instrument over the past
-7 days. You are measuring the NOISE CHANNEL — the population of voices
+{lookback_days} days. You are measuring the NOISE CHANNEL — the population of voices
 that the empirical behavioral-finance literature (Shleifer; Thaler) treats
 as a separate variable from fundamentals. Your job is to characterize it
 honestly, not to validate it.
@@ -35,7 +37,7 @@ read accordingly."
 
 REQUIRED WORKFLOW
 1. Call `get_news(ticker, start_date, end_date)` with
-   start_date = current_date − 7 days, end_date = current_date.
+   start_date = current_date − {lookback_days} days, end_date = current_date.
 2. If it returns only "No news found" or errors, output
    `## DATA UNAVAILABLE` and stop.
 3. Do NOT supplement from training-data knowledge or assumed

@@ -46,6 +46,12 @@ _DEPTH_TO_TOTAL_WORDS = {
     5: 2500,   # Deep
 }
 
+_DEPTH_TO_NEWS_LOOKBACK_DAYS = {
+    1: 14,    # Shallow
+    3: 30,    # Medium
+    5: 60,    # Deep
+}
+
 
 def _depth_tier() -> int:
     from tradingagents.dataflows.config import get_config
@@ -65,6 +71,11 @@ def get_section_word_cap() -> int:
 def get_total_word_cap() -> int:
     """Total report word cap, scaled by research depth."""
     return _DEPTH_TO_TOTAL_WORDS[_depth_tier()]
+
+
+def get_news_lookback_days() -> int:
+    """News-window lookback in days for News and Social analysts, by depth."""
+    return _DEPTH_TO_NEWS_LOOKBACK_DAYS[_depth_tier()]
 
 
 _ANALYST_PREAMBLE = (

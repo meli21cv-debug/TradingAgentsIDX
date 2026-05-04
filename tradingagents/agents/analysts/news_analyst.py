@@ -5,6 +5,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_global_news,
     get_language_instruction,
     get_news,
+    get_news_lookback_days,
     get_total_word_cap,
 )
 from tradingagents.dataflows.config import get_config
@@ -21,13 +22,14 @@ def create_news_analyst(llm):
         ]
 
         total_word_cap = get_total_word_cap()
-        system_message = f"""You are the News Analyst. Surface news from the past 7 days that
+        lookback_days = get_news_lookback_days()
+        system_message = f"""You are the News Analyst. Surface news from the past {lookback_days} days that
 materially affects the instrument or its sector, and characterize the
 macro backdrop. You are a filter and a characterizer, not a forecaster.
 
 REQUIRED WORKFLOW
 1. Call `get_news(ticker, start_date, end_date)` with
-   start_date = current_date − 7 days, end_date = current_date.
+   start_date = current_date − {lookback_days} days, end_date = current_date.
 2. Call `get_global_news(curr_date)`.
 3. If both calls return only "No news found" or errors, output
    `## DATA UNAVAILABLE` and stop. If only one fails, note which
@@ -61,7 +63,7 @@ DEFINITIONS (apply uniformly)
   assessment on their own.
 
 - NEWNESS: a story is "new" if the underlying event occurred or was
-  first disclosed within the 7-day window. Re-coverage of older
+  first disclosed within the {lookback_days}-day window. Re-coverage of older
   events is flagged as "[re-coverage]" and does not count toward
   the material-story count.
 
