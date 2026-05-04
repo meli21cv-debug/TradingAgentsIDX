@@ -1260,11 +1260,12 @@ def run_analysis(checkpoint: bool = False):
 
     # Always save the report to the default location.
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    # Default save location: Google Drive folder, overridable via
-    # the TRADINGAGENTS_REPORTS_DIR environment variable.
+    # Default save location: ~/Documents/TradingAgents/reports.
+    # Override with the TRADINGAGENTS_REPORTS_DIR environment variable
+    # (e.g. point it at a Google Drive / iCloud folder for sync).
     reports_root = Path(os.environ.get(
         "TRADINGAGENTS_REPORTS_DIR",
-        "~/TradingAgents/reports",
+        str(Path.home() / "Documents" / "TradingAgents" / "reports"),
     ))
     save_path = reports_root / f"{selections['ticker']}_{timestamp}"
     try:
