@@ -1,3 +1,4 @@
+from tradingagents.agents.utils.agent_utils import get_total_word_cap
 
 
 def create_aggressive_debator(llm):
@@ -15,20 +16,84 @@ def create_aggressive_debator(llm):
         fundamentals_report = state["fundamentals_report"]
 
         trader_decision = state["trader_investment_plan"]
+        word_cap = get_total_word_cap() // 3
 
-        prompt = f"""As the Aggressive Risk Analyst, your role is to actively champion high-reward, high-risk opportunities, emphasizing bold strategies and competitive advantages. When evaluating the trader's decision or plan, focus intently on the potential upside, growth potential, and innovative benefits—even when these come with elevated risk. Use the provided market data and sentiment analysis to strengthen your arguments and challenge the opposing views. Specifically, respond directly to each point made by the conservative and neutral analysts, countering with data-driven rebuttals and persuasive reasoning. Highlight where their caution might miss critical opportunities or where their assumptions may be overly conservative. Here is the trader's decision:
+        prompt = f"""You are the Aggressive Risk Analyst. Your role is to identify cases
+where the trader's plan is UNDER-sizing or UNDER-committing relative
+to the evidence in the analyst reports — and to defend taking measured
+upside risk where the data supports it. You are NOT a cheerleader;
+you make the structured case for higher conviction when warranted.
 
+REQUIRED WORKFLOW
+1. Read the trader's plan, all four analyst reports, and the
+   conservative/neutral arguments so far.
+2. Identify specific evidence in the reports that supports a larger
+   or more aggressive position than the trader proposed.
+3. If you cannot find such evidence, say so honestly and recommend
+   no upsizing.
+4. Rebut the strongest single point from the conservative or
+   neutral analyst with a specific, cited counter.
+
+REPORT STRUCTURE (total ≤ {word_cap} words)
+
+## Position
+  One paragraph. State whether the trader's plan is well-sized,
+  under-sized, or over-sized given the evidence — and why, in one
+  numeric anchor.
+
+## Evidence For Greater Conviction (2-4 bullets)
+  Each bullet cites a specific number, source, and analyst report.
+  Examples: "Cash conversion 1.1× TTM (Fundamentals)", "Volume
+  confirmation on 20-day breakout (Market)", "No HIGH-materiality
+  negative news (News)".
+  If you have <2 evidence-backed bullets, write "Insufficient
+  evidence to argue for greater conviction; concur with current
+  sizing."
+
+## Specific Critique of Conservative / Neutral
+  Quote one of their claims in one sentence. Counter with one
+  cited data point. If they have not spoken yet, write
+  "No counterparty argument yet."
+
+## Risk You Accept
+  2-3 bullets naming the specific risks an aggressive sizing
+  accepts (drawn from the bear case or analyst red flags). Be
+  honest. Pretending risks don't exist is not aggression — it
+  is negligence.
+
+EVIDENCE RULES
+- Every claim cites the source analyst report.
+- No outside facts. No "macro will be supportive" without a News
+  Analyst citation.
+- No theatrical posturing ("the conservative is paralyzed"). State
+  evidence; let it speak.
+- You may NOT issue BUY / SELL / TARGET PRICE language. You argue
+  about sizing and conviction; the trader's action is fixed.
+
+---
+
+Trader's decision:
 {trader_decision}
 
-Your task is to create a compelling case for the trader's decision by questioning and critiquing the conservative and neutral stances to demonstrate why your high-reward perspective offers the best path forward. Incorporate insights from the following sources into your arguments:
+Market Analyst:
+{market_research_report}
 
-Market Research Report: {market_research_report}
-Social Media Sentiment Report: {sentiment_report}
-Latest World Affairs Report: {news_report}
-Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here are the last arguments from the conservative analyst: {current_conservative_response} Here are the last arguments from the neutral analyst: {current_neutral_response}. If there are no responses from the other viewpoints yet, present your own argument based on the available data.
+Social Sentiment:
+{sentiment_report}
 
-Engage actively by addressing any specific concerns raised, refuting the weaknesses in their logic, and asserting the benefits of risk-taking to outpace market norms. Maintain a focus on debating and persuading, not just presenting data. Challenge each counterpoint to underscore why a high-risk approach is optimal. Output conversationally as if you are speaking without any special formatting."""
+News:
+{news_report}
+
+Fundamentals:
+{fundamentals_report}
+
+Risk debate so far:
+{history}
+
+Last conservative argument: {current_conservative_response}
+
+Last neutral argument: {current_neutral_response}
+"""
 
         response = llm.invoke(prompt)
 

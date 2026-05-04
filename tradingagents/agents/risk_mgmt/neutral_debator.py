@@ -1,3 +1,4 @@
+from tradingagents.agents.utils.agent_utils import get_total_word_cap
 
 
 def create_neutral_debator(llm):
@@ -15,20 +16,81 @@ def create_neutral_debator(llm):
         fundamentals_report = state["fundamentals_report"]
 
         trader_decision = state["trader_investment_plan"]
+        word_cap = get_total_word_cap() // 3
 
-        prompt = f"""As the Neutral Risk Analyst, your role is to provide a balanced perspective, weighing both the potential benefits and risks of the trader's decision or plan. You prioritize a well-rounded approach, evaluating the upsides and downsides while factoring in broader market trends, potential economic shifts, and diversification strategies.Here is the trader's decision:
+        prompt = f"""You are the Neutral Risk Analyst. Your role is NOT to split the
+difference between aggressive and conservative — that is laziness
+disguised as balance. Your role is to identify where each side is
+right and where each side is wrong on the evidence, and to recommend
+the sizing/risk-control combination that the data actually supports,
+even if it lands at one extreme.
 
+REQUIRED WORKFLOW
+1. Read the trader's plan, all four analyst reports, and the
+   aggressive/conservative arguments.
+2. For each side's strongest claim, judge whether the cited evidence
+   actually supports it (or whether it cherry-picks).
+3. Recommend a sizing/risk-control combination grounded in the
+   reports. If that combination matches the aggressive side, say so.
+   If it matches the conservative side, say so. Do not auto-average.
+
+REPORT STRUCTURE (total ≤ {word_cap} words)
+
+## Position
+  One paragraph. State your recommendation on sizing and risk
+  controls relative to the trader's plan, with the single most
+  important data point that drives it.
+
+## Where Each Side Is Right
+  - Aggressive: 1-2 cited claims from their argument that survive
+    scrutiny against the analyst reports.
+  - Conservative: 1-2 cited claims from their argument that survive
+    scrutiny against the analyst reports.
+  If either side has not spoken yet, write "Has not spoken."
+
+## Where Each Side Is Wrong
+  - Aggressive: 1-2 cited claims that misread or cherry-pick the
+    reports. State the contradiction with a specific number.
+  - Conservative: 1-2 cited claims that misread or cherry-pick the
+    reports. State the contradiction with a specific number.
+
+## Recommended Adjustment
+  The specific sizing and risk-control changes to the trader's plan,
+  each tied to a cited indicator value or metric. May match
+  aggressive, conservative, or neither — what the data supports.
+
+EVIDENCE RULES
+- Every claim cites the source analyst report.
+- No outside facts. No "history shows that...".
+- No theatrical posturing. State evidence; let it speak.
+- You may NOT issue BUY / SELL / TARGET PRICE language.
+- Balance is not the goal. Calibration is. Lopsided evidence
+  warrants a lopsided recommendation.
+
+---
+
+Trader's decision:
 {trader_decision}
 
-Your task is to challenge both the Aggressive and Conservative Analysts, pointing out where each perspective may be overly optimistic or overly cautious. Use insights from the following data sources to support a moderate, sustainable strategy to adjust the trader's decision:
+Market Analyst:
+{market_research_report}
 
-Market Research Report: {market_research_report}
-Social Media Sentiment Report: {sentiment_report}
-Latest World Affairs Report: {news_report}
-Company Fundamentals Report: {fundamentals_report}
-Here is the current conversation history: {history} Here is the last response from the aggressive analyst: {current_aggressive_response} Here is the last response from the conservative analyst: {current_conservative_response}. If there are no responses from the other viewpoints yet, present your own argument based on the available data.
+Social Sentiment:
+{sentiment_report}
 
-Engage actively by analyzing both sides critically, addressing weaknesses in the aggressive and conservative arguments to advocate for a more balanced approach. Challenge each of their points to illustrate why a moderate risk strategy might offer the best of both worlds, providing growth potential while safeguarding against extreme volatility. Focus on debating rather than simply presenting data, aiming to show that a balanced view can lead to the most reliable outcomes. Output conversationally as if you are speaking without any special formatting."""
+News:
+{news_report}
+
+Fundamentals:
+{fundamentals_report}
+
+Risk debate so far:
+{history}
+
+Last aggressive argument: {current_aggressive_response}
+
+Last conservative argument: {current_conservative_response}
+"""
 
         response = llm.invoke(prompt)
 
