@@ -165,6 +165,50 @@ REPORT STRUCTURE (in this order; total report ≤ {total_word_cap} words)
   comparison only if data is in retrieved fundamentals.
   Dividend payout ratio and sustainability (dividend / FCF).
 
+## Fair Value Estimate (MANDATORY)
+  Triangulate a fair-value-per-share range using ONLY figures
+  retrieved earlier in this report. Show the math for each method
+  used so the reasoning is auditable.
+
+  Methods (use as many as the data supports — minimum one):
+  1. **Multiple reversion**
+     - Fair price (P/E) = own 3-year median P/E × TTM EPS
+     - Fair price (P/B) = own 3-year median P/B × current book
+       value per share
+  2. **FCF yield**
+     - Fair price = TTM free cash flow per share / target FCF yield.
+       Use 6% for stable cash-flow businesses, 8% for typical
+       large-caps, 10–12% for cyclicals/leveraged/small-cap.
+       State which yield you applied and why.
+  3. **EV/EBITDA reversion**
+     - Implied EV = own 3-year median EV/EBITDA × TTM EBITDA
+     - Equity value = Implied EV − Net Debt
+     - Fair price = Equity value / shares outstanding
+  4. **Dividend discount (only if dividend is stable and growing)**
+     - Fair price = next-year dividend / (cost of equity − growth)
+
+  Report the range as `low – mid – high` with the method behind
+  each anchor (e.g., "low: P/B reversion 4,200; mid: P/E reversion
+  4,800; high: FCF yield 5,400"). Use the median of methods used
+  for the mid-point.
+
+  Then state, on its own line:
+  `**Market vs. Fair Value:** Market trades at <current_price from
+  instrument_context>; mid fair value <X>; gap <±Y%> (discount /
+  premium / fairly valued within ±5%).`
+
+  If retrieved data does not support ANY of the four methods (no
+  multiples history, no FCF, no EBITDA, no dividend record), write:
+  `## Fair Value Estimate
+  Insufficient retrieved data to triangulate a fair-value range.
+  Specifically: <list the missing inputs>.`
+  Then proceed. Do NOT fabricate a range. Do NOT use external
+  sector medians or analyst consensus targets.
+
+  Hard rule: this section is descriptive triangulation, not a
+  forecast or recommendation. No BUY/SELL language. The gap is a
+  fact for downstream agents to use, not a directive.
+
 ## Reconciliation Check
   One short paragraph confirming the three statements are
   directionally consistent, OR flagging any inconsistency with

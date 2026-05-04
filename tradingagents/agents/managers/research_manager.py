@@ -46,16 +46,35 @@ REQUIRED WORKFLOW
 RATING THRESHOLDS (apply mechanically)
 - **Buy**: ≥3 decisive bull claims survive scrutiny, ≤1 decisive
   bear claim survives, AND no HIGH-materiality negative news.
+  ADDITIONALLY: market price must be at or below the mid-point of
+  the Fundamentals analyst's Fair Value Estimate, OR the bull
+  thesis must explicitly justify a premium with cited evidence
+  (e.g., growth rate that own-history multiples don't capture).
 - **Overweight**: bull evidence outweighs bear evidence on 2 of 3
   pillars (Market / Fundamentals / News+Sentiment), with no
-  unaddressed bear red flag.
+  unaddressed bear red flag. Market price ideally below the
+  Fair Value mid-point but a small premium (<10%) is acceptable
+  if the Market or News pillar is strongly supportive.
 - **Hold**: pillars are split or evidence is genuinely balanced
-  AFTER scoring; OR a key analyst report is DATA UNAVAILABLE.
+  AFTER scoring; OR a key analyst report is DATA UNAVAILABLE; OR
+  the Fair Value gap is within ±5% (fairly valued).
 - **Underweight**: bear evidence outweighs bull evidence on 2 of 3
-  pillars, with no unaddressed bull strength on the third.
+  pillars, with no unaddressed bull strength on the third. Market
+  price ideally above Fair Value mid-point but a small discount
+  (<10%) is acceptable if the bear thesis on quality/leverage is
+  strong.
 - **Sell**: ≥3 decisive bear claims survive, ≤1 decisive bull claim
   survives, AND at least one HIGH-materiality negative item
   (regulatory, accruals flag, leverage breach, fraud-pattern flag).
+  ADDITIONALLY: market price must be at or above the Fair Value
+  mid-point, OR the bear thesis must explicitly justify a discount
+  being insufficient (e.g., quality/governance issue that own-
+  history multiples don't capture).
+
+If the Fundamentals analyst reported "Insufficient retrieved data
+to triangulate a fair-value range," you may proceed without the
+fair-value test but conviction is reduced one tier (Buy → Overweight,
+Sell → Underweight).
 
 Reserve Hold for genuinely balanced cases — not for indecision.
 
