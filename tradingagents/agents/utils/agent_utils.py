@@ -40,17 +40,31 @@ _DEPTH_TO_SECTION_WORDS = {
     5: 350,   # Deep
 }
 
+_DEPTH_TO_TOTAL_WORDS = {
+    1: 800,    # Shallow
+    3: 1500,   # Medium
+    5: 2500,   # Deep
+}
+
+
+def _depth_tier() -> int:
+    from tradingagents.dataflows.config import get_config
+    depth = int(get_config().get("max_debate_rounds", 1))
+    if depth <= 1:
+        return 1
+    if depth <= 3:
+        return 3
+    return 5
+
 
 def get_section_word_cap() -> int:
     """Per-section word cap for analyst reports, scaled by research depth."""
-    from tradingagents.dataflows.config import get_config
-    depth = int(get_config().get("max_debate_rounds", 1))
-    # Snap to the nearest configured tier to handle custom values gracefully.
-    if depth <= 1:
-        return _DEPTH_TO_SECTION_WORDS[1]
-    if depth <= 3:
-        return _DEPTH_TO_SECTION_WORDS[3]
-    return _DEPTH_TO_SECTION_WORDS[5]
+    return _DEPTH_TO_SECTION_WORDS[_depth_tier()]
+
+
+def get_total_word_cap() -> int:
+    """Total report word cap, scaled by research depth."""
+    return _DEPTH_TO_TOTAL_WORDS[_depth_tier()]
 
 
 _ANALYST_PREAMBLE = (
