@@ -549,53 +549,33 @@ def get_user_selections():
     )
     selected_research_depth = select_research_depth()
 
-    # Step 6: LLM Provider
-    console.print(
-        create_question_box(
-            "Step 6: LLM Provider", "Select your LLM provider"
-        )
-    )
-    selected_llm_provider, backend_url = select_llm_provider()
+    # Steps 6–8 (LLM provider / models / provider-specific effort) are skipped
+    # because we always use DeepSeek. The interactive selectors below are
+    # preserved (commented) — uncomment to re-enable provider/model dialogs.
+    #
+    # console.print(create_question_box("Step 6: LLM Provider", "Select your LLM provider"))
+    # selected_llm_provider, backend_url = select_llm_provider()
+    # console.print(create_question_box("Step 7: Thinking Agents", "Select your thinking agents for analysis"))
+    # selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
+    # selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
+    # provider_lower = selected_llm_provider.lower()
+    # if provider_lower == "google":
+    #     console.print(create_question_box("Step 8: Thinking Mode", "Configure Gemini thinking mode"))
+    #     thinking_level = ask_gemini_thinking_config()
+    # elif provider_lower == "openai":
+    #     console.print(create_question_box("Step 8: Reasoning Effort", "Configure OpenAI reasoning effort level"))
+    #     reasoning_effort = ask_openai_reasoning_effort()
+    # elif provider_lower == "anthropic":
+    #     console.print(create_question_box("Step 8: Effort Level", "Configure Claude effort level"))
+    #     anthropic_effort = ask_anthropic_effort()
 
-    # Step 7: Thinking agents
-    console.print(
-        create_question_box(
-            "Step 7: Thinking Agents", "Select your thinking agents for analysis"
-        )
-    )
-    selected_shallow_thinker = select_shallow_thinking_agent(selected_llm_provider)
-    selected_deep_thinker = select_deep_thinking_agent(selected_llm_provider)
-
-    # Step 8: Provider-specific thinking configuration
+    selected_llm_provider = "deepseek"
+    backend_url = "https://api.deepseek.com"
+    selected_shallow_thinker = "deepseek-v4-flash"
+    selected_deep_thinker = "deepseek-v4-pro"
     thinking_level = None
     reasoning_effort = None
     anthropic_effort = None
-
-    provider_lower = selected_llm_provider.lower()
-    if provider_lower == "google":
-        console.print(
-            create_question_box(
-                "Step 8: Thinking Mode",
-                "Configure Gemini thinking mode"
-            )
-        )
-        thinking_level = ask_gemini_thinking_config()
-    elif provider_lower == "openai":
-        console.print(
-            create_question_box(
-                "Step 8: Reasoning Effort",
-                "Configure OpenAI reasoning effort level"
-            )
-        )
-        reasoning_effort = ask_openai_reasoning_effort()
-    elif provider_lower == "anthropic":
-        console.print(
-            create_question_box(
-                "Step 8: Effort Level",
-                "Configure Claude effort level"
-            )
-        )
-        anthropic_effort = ask_anthropic_effort()
 
     return {
         "ticker": selected_ticker,
