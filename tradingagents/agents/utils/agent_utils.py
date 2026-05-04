@@ -52,6 +52,20 @@ _DEPTH_TO_NEWS_LOOKBACK_DAYS = {
     5: 60,    # Deep
 }
 
+# Per-turn caps for debaters. Kept small so debate volume does not exceed
+# the source material from analysts.
+_DEPTH_TO_RESEARCHER_TURN = {
+    1: 200,   # Shallow
+    3: 350,   # Medium
+    5: 500,   # Deep
+}
+
+_DEPTH_TO_RISK_TURN = {
+    1: 150,   # Shallow
+    3: 250,   # Medium
+    5: 350,   # Deep
+}
+
 
 def _depth_tier() -> int:
     from tradingagents.dataflows.config import get_config
@@ -76,6 +90,18 @@ def get_total_word_cap() -> int:
 def get_news_lookback_days() -> int:
     """News-window lookback in days for News and Social analysts, by depth."""
     return _DEPTH_TO_NEWS_LOOKBACK_DAYS[_depth_tier()]
+
+
+def get_researcher_turn_cap() -> int:
+    """Per-turn word cap for Bull/Bear researchers — kept tight to prevent
+    debate volume from dwarfing analyst evidence."""
+    return _DEPTH_TO_RESEARCHER_TURN[_depth_tier()]
+
+
+def get_risk_turn_cap() -> int:
+    """Per-turn word cap for risk debaters (Aggressive/Conservative/Neutral).
+    Tighter than researchers because there are three of them."""
+    return _DEPTH_TO_RISK_TURN[_depth_tier()]
 
 
 _ANALYST_PREAMBLE = (

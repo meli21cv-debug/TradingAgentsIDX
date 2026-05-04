@@ -1,4 +1,4 @@
-from tradingagents.agents.utils.agent_utils import get_total_word_cap
+from tradingagents.agents.utils.agent_utils import get_risk_turn_cap
 
 
 def create_neutral_debator(llm):
@@ -16,7 +16,7 @@ def create_neutral_debator(llm):
         fundamentals_report = state["fundamentals_report"]
 
         trader_decision = state["trader_investment_plan"]
-        word_cap = get_total_word_cap() // 3
+        word_cap = get_risk_turn_cap()
 
         prompt = f"""You are the Neutral Risk Analyst. Your role is NOT to split the
 difference between aggressive and conservative — that is laziness

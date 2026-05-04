@@ -1,4 +1,4 @@
-from tradingagents.agents.utils.agent_utils import get_total_word_cap
+from tradingagents.agents.utils.agent_utils import get_researcher_turn_cap
 
 
 def create_bear_researcher(llm):
@@ -12,7 +12,7 @@ def create_bear_researcher(llm):
         sentiment_report = state["sentiment_report"]
         news_report = state["news_report"]
         fundamentals_report = state["fundamentals_report"]
-        word_cap = get_total_word_cap() // 2
+        word_cap = get_researcher_turn_cap()
 
         prompt = f"""You are the Bear Researcher. Build the strongest evidence-based short
 or avoid case for the instrument by mining the four analyst reports
