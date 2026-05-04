@@ -636,6 +636,33 @@ def get_analysis_date():
             )
 
 
+def _extract_decision_summary(final_state: dict) -> str:
+    """Build a filename-safe conclusion suffix like 'BUY 5875' or 'HOLD'.
+
+    Pulls the rating from the Portfolio Manager's final decision and, when
+    bullish, appends the Trader's entry price (if present in the plan).
+    """
+    import re
+    pm_text = final_state.get("final_trade_decision") or ""
+    rating_match = re.search(r"\*\*Rating\*\*:\s*([A-Za-z]+)", pm_text)
+    if rating_match:
+        rating = rating_match.group(1).strip().upper()
+    else:
+        # Fallback: grep for the legacy stop-signal line
+        m = re.search(r"FINAL TRANSACTION PROPOSAL:\s*\*\*([A-Z/]+)\*\*", pm_text)
+        rating = m.group(1).strip().upper() if m else "UNKNOWN"
+
+    # Append entry price for bullish ratings
+    bullish = rating in {"BUY", "OVERWEIGHT"}
+    if bullish:
+        trader_text = final_state.get("trader_investment_plan") or ""
+        price_match = re.search(r"\*\*Entry Price\*\*:\s*([0-9][0-9,\.]*)", trader_text)
+        if price_match:
+            price = price_match.group(1).replace(",", "").rstrip(".")
+            return f"{rating} {price}"
+    return rating
+
+
 def save_report_to_disk(final_state, ticker: str, save_path: Path):
     """Save complete analysis report to disk with organized subfolders."""
     save_path.mkdir(parents=True, exist_ok=True)
@@ -720,10 +747,19 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"], encoding="utf-8")
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
 
-    # Write consolidated report
+    # Write consolidated report — name it "{TICKER} {DATE} {CONCLUSION}.md"
+    # where CONCLUSION is e.g. "BUY 5875", "HOLD", "SELL".
     header = f"# Trading Analysis Report: {ticker}\n\nGenerated: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n\n"
-    (save_path / "complete_report.md").write_text(header + "\n\n".join(sections), encoding="utf-8")
-    return save_path / "complete_report.md"
+    analysis_date = final_state.get("trade_date") or datetime.datetime.now().strftime("%Y-%m-%d")
+    conclusion = _extract_decision_summary(final_state)
+    # Sanitize for filesystem: keep alphanumerics, dots, dashes, spaces.
+    import re as _re
+    safe_ticker = _re.sub(r"[^A-Za-z0-9._-]", "_", ticker)
+    safe_concl = _re.sub(r"[^A-Za-z0-9._\- ]", "_", conclusion).strip()
+    report_name = f"{safe_ticker} {analysis_date} {safe_concl}.md"
+    report_path = save_path / report_name
+    report_path.write_text(header + "\n\n".join(sections), encoding="utf-8")
+    return report_path
 
 
 def display_complete_report(final_state):
