@@ -53,7 +53,7 @@ class MessageBuffer:
     # Analyst name mapping
     ANALYST_MAPPING = {
         "market": "Market Analyst",
-        "social": "Social Analyst",
+        "social": "Smart Money Analyst",
         "news": "News Analyst",
         "fundamentals": "Fundamentals Analyst",
     }
@@ -63,7 +63,7 @@ class MessageBuffer:
     # finalizing_agent: which agent must be "completed" for this report to count as done
     REPORT_SECTIONS = {
         "market_report": ("market", "Market Analyst"),
-        "sentiment_report": ("social", "Social Analyst"),
+        "sentiment_report": ("social", "Smart Money Analyst"),
         "news_report": ("news", "News Analyst"),
         "fundamentals_report": ("fundamentals", "Fundamentals Analyst"),
         "investment_plan": (None, "Research Manager"),
@@ -171,7 +171,7 @@ class MessageBuffer:
             # Format the current section for display
             section_titles = {
                 "market_report": "Market Analysis",
-                "sentiment_report": "Social Sentiment",
+                "sentiment_report": "Smart Money & Governance",
                 "news_report": "News Analysis",
                 "fundamentals_report": "Fundamentals Analysis",
                 "investment_plan": "Research Team Decision",
@@ -198,7 +198,7 @@ class MessageBuffer:
                 )
             if self.report_sections.get("sentiment_report"):
                 report_parts.append(
-                    f"### Social Sentiment\n{self.report_sections['sentiment_report']}"
+                    f"### Smart Money & Governance\n{self.report_sections['sentiment_report']}"
                 )
             if self.report_sections.get("news_report"):
                 report_parts.append(
@@ -284,7 +284,7 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
     all_teams = {
         "Analyst Team": [
             "Market Analyst",
-            "Social Analyst",
+            "Smart Money Analyst",
             "News Analyst",
             "Fundamentals Analyst",
         ],
@@ -678,7 +678,7 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path):
     if final_state.get("sentiment_report"):
         analysts_dir.mkdir(exist_ok=True)
         (analysts_dir / "sentiment.md").write_text(final_state["sentiment_report"], encoding="utf-8")
-        analyst_parts.append(("Social Analyst", final_state["sentiment_report"]))
+        analyst_parts.append(("Smart Money Analyst", final_state["sentiment_report"]))
     if final_state.get("news_report"):
         analysts_dir.mkdir(exist_ok=True)
         (analysts_dir / "news.md").write_text(final_state["news_report"], encoding="utf-8")
@@ -772,7 +772,7 @@ def display_complete_report(final_state):
     if final_state.get("market_report"):
         analysts.append(("Market Analyst", final_state["market_report"]))
     if final_state.get("sentiment_report"):
-        analysts.append(("Social Analyst", final_state["sentiment_report"]))
+        analysts.append(("Smart Money Analyst", final_state["sentiment_report"]))
     if final_state.get("news_report"):
         analysts.append(("News Analyst", final_state["news_report"]))
     if final_state.get("fundamentals_report"):
@@ -834,7 +834,7 @@ def update_research_team_status(status):
 ANALYST_ORDER = ["market", "social", "news", "fundamentals"]
 ANALYST_AGENT_NAMES = {
     "market": "Market Analyst",
-    "social": "Social Analyst",
+    "social": "Smart Money Analyst",
     "news": "News Analyst",
     "fundamentals": "Fundamentals Analyst",
 }
@@ -970,7 +970,7 @@ def check_report_quality(final_state: dict) -> list[tuple[str, str]]:
     """
     sections = {
         "market_report": "Market Analyst",
-        "sentiment_report": "Social Analyst",
+        "sentiment_report": "Smart Money Analyst",
         "news_report": "News Analyst",
         "fundamentals_report": "Fundamentals Analyst",
     }
