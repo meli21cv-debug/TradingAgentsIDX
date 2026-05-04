@@ -1,9 +1,11 @@
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from tradingagents.agents.utils.agent_utils import (
     build_instrument_context,
+    get_analyst_preamble,
     get_global_news,
     get_language_instruction,
     get_news,
+    get_section_word_cap,
 )
 from tradingagents.dataflows.config import get_config
 
@@ -18,25 +20,38 @@ def create_news_analyst(llm):
             get_global_news,
         ]
 
+        word_cap = get_section_word_cap()
         system_message = (
-            "You are a news researcher tasked with analyzing recent news and trends over the past week. Please write a comprehensive report of the current state of the world that is relevant for trading and macroeconomics. Use the available tools: get_news(query, start_date, end_date) for company-specific or targeted news searches, and get_global_news(curr_date, look_back_days, limit) for broader macroeconomic news. Provide specific, actionable insights with supporting evidence to help traders make informed decisions."
-            + """ Make sure to append a Markdown table at the end of the report to organize key points in the report, organized and easy to read."""
+            "You are the News Analyst. Surface news from the past 7 days that "
+            "materially affects the instrument or its sector, and characterize "
+            "the macro backdrop.\n\n"
+            "REQUIRED WORKFLOW:\n"
+            "1. Call `get_news(ticker, start_date, end_date)` with start_date = "
+            "current_date minus 7 days.\n"
+            "2. Call `get_global_news(curr_date)`.\n"
+            "3. If both calls return only 'No news found' or errors, output "
+            "`## DATA UNAVAILABLE` and stop. If only one fails, note it "
+            "explicitly and continue.\n\n"
+            f"REPORT STRUCTURE (each section ≤ {word_cap} words):\n"
+            "## Company / Instrument News — bullet each material story as: "
+            "`**[Date]** — [Headline]. [1-sentence why it matters]. (Source: "
+            "[publisher])`. Drop trivial stories. If fewer than 3 material "
+            "stories exist, say so explicitly.\n"
+            "## Macro Context — 3-5 bullets covering relevant macro/sector "
+            "items from the global news.\n"
+            "## Catalysts to Watch — 2-4 forward-looking items (earnings, "
+            "dividend dates, sector events) explicitly mentioned in retrieved "
+            "articles. If none mentioned, say 'None retrieved'.\n"
+            "## Summary Table — columns: `Date | Headline | Source | "
+            "Sentiment (+/-/neutral) | Materiality (high/med/low)`.\n\n"
+            "Cite the publisher for every story. Do not fabricate news. Do "
+            "not include any BUY/HOLD/SELL recommendation."
             + get_language_instruction()
         )
 
         prompt = ChatPromptTemplate.from_messages(
             [
-                (
-                    "system",
-                    "You are a helpful AI assistant, collaborating with other assistants."
-                    " Use the provided tools to progress towards answering the question."
-                    " If you are unable to fully answer, that's OK; another assistant with different tools"
-                    " will help where you left off. Execute what you can to make progress."
-                    " If you or any other assistant has the FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** or deliverable,"
-                    " prefix your response with FINAL TRANSACTION PROPOSAL: **BUY/HOLD/SELL** so the team knows to stop."
-                    " You have access to the following tools: {tool_names}.\n{system_message}"
-                    "For your reference, the current date is {current_date}. {instrument_context}",
-                ),
+                ("system", get_analyst_preamble()),
                 MessagesPlaceholder(variable_name="messages"),
             ]
         )

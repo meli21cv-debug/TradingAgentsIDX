@@ -34,6 +34,42 @@ def get_language_instruction() -> str:
     return f" Write your entire response in {lang}."
 
 
+_DEPTH_TO_SECTION_WORDS = {
+    1: 100,   # Shallow
+    3: 200,   # Medium
+    5: 350,   # Deep
+}
+
+
+def get_section_word_cap() -> int:
+    """Per-section word cap for analyst reports, scaled by research depth."""
+    from tradingagents.dataflows.config import get_config
+    depth = int(get_config().get("max_debate_rounds", 1))
+    # Snap to the nearest configured tier to handle custom values gracefully.
+    if depth <= 1:
+        return _DEPTH_TO_SECTION_WORDS[1]
+    if depth <= 3:
+        return _DEPTH_TO_SECTION_WORDS[3]
+    return _DEPTH_TO_SECTION_WORDS[5]
+
+
+_ANALYST_PREAMBLE = (
+    "You are a helpful AI assistant collaborating with other analysts. Use the "
+    "provided tools to answer the question. If you cannot fully answer, that is "
+    "OK — another analyst will pick up where you left off. Execute what you can.\n"
+    "You have access to the following tools: {tool_names}.\n"
+    "Do NOT include any FINAL TRANSACTION PROPOSAL or BUY/HOLD/SELL recommendation "
+    "— that decision belongs to the Trader downstream.\n"
+    "{system_message}\n"
+    "Current date: {current_date}. {instrument_context}"
+)
+
+
+def get_analyst_preamble() -> str:
+    """Shared system-prompt preamble for all analyst agents."""
+    return _ANALYST_PREAMBLE
+
+
 def build_instrument_context(ticker: str) -> str:
     """Describe the exact instrument so agents preserve exchange-qualified tickers."""
     from tradingagents.dataflows.config import get_config
