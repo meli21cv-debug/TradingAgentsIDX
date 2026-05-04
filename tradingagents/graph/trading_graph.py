@@ -188,8 +188,19 @@ class TradingAgentsGraph:
             ),
         }
 
+    def _benchmark_symbol(self) -> str:
+        """Pick the alpha benchmark based on the configured market.
+
+        IDX names should be measured against IHSG (^JKSE), not the S&P 500.
+        Add more market mappings here as they're supported.
+        """
+        market = (self.config.get("market") or "").upper()
+        return {
+            "ID": "^JKSE",   # Jakarta Composite (IHSG)
+        }.get(market, "SPY")
+
     def _fetch_returns(
-        self, ticker: str, trade_date: str, holding_days: int = 5
+        self, ticker: str, trade_date: str, holding_days: Optional[int] = None
     ) -> Tuple[Optional[float], Optional[float], Optional[int]]:
         """Fetch raw and alpha return for ticker over holding_days from trade_date.
 
@@ -197,27 +208,30 @@ class TradingAgentsGraph:
         (None, None, None) if price data is unavailable (too recent, delisted,
         or network error).
         """
+        if holding_days is None:
+            holding_days = int(self.config.get("reflection_holding_days", 5))
+        benchmark_sym = self._benchmark_symbol()
         try:
             start = datetime.strptime(trade_date, "%Y-%m-%d")
             end = start + timedelta(days=holding_days + 7)  # buffer for weekends/holidays
             end_str = end.strftime("%Y-%m-%d")
 
             stock = yf.Ticker(ticker).history(start=trade_date, end=end_str)
-            spy = yf.Ticker("SPY").history(start=trade_date, end=end_str)
+            benchmark = yf.Ticker(benchmark_sym).history(start=trade_date, end=end_str)
 
-            if len(stock) < 2 or len(spy) < 2:
+            if len(stock) < 2 or len(benchmark) < 2:
                 return None, None, None
 
-            actual_days = min(holding_days, len(stock) - 1, len(spy) - 1)
+            actual_days = min(holding_days, len(stock) - 1, len(benchmark) - 1)
             raw = float(
                 (stock["Close"].iloc[actual_days] - stock["Close"].iloc[0])
                 / stock["Close"].iloc[0]
             )
-            spy_ret = float(
-                (spy["Close"].iloc[actual_days] - spy["Close"].iloc[0])
-                / spy["Close"].iloc[0]
+            benchmark_ret = float(
+                (benchmark["Close"].iloc[actual_days] - benchmark["Close"].iloc[0])
+                / benchmark["Close"].iloc[0]
             )
-            alpha = raw - spy_ret
+            alpha = raw - benchmark_ret
             return raw, alpha, actual_days
         except Exception as e:
             logger.warning(

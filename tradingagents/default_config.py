@@ -35,6 +35,9 @@ DEFAULT_CONFIG = {
     # bare IDX tickers and uses Bahasa Indonesia queries for macro news.
     # Set to None to disable market-specific behavior.
     "market": "ID",
+    # Holding period (trading days) used by the reflection mechanism to compute
+    # realized return after a decision. Default 5 = ~1 week swing horizon.
+    "reflection_holding_days": 5,
     # Debate and discussion settings
     "max_debate_rounds": 1,
     "max_risk_discuss_rounds": 1,
