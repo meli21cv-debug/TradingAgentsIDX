@@ -333,8 +333,8 @@ def ask_output_language() -> str:
     choice = questionary.select(
         "Select Output Language:",
         choices=[
-            questionary.Choice("Indonesian (Bahasa Indonesia) [default]", "Indonesian"),
-            questionary.Choice("English", "English"),
+            questionary.Choice("English (default)", "English"),
+            questionary.Choice("Indonesian (Bahasa Indonesia)", "Indonesian"),
             questionary.Choice("Chinese (中文)", "Chinese"),
             questionary.Choice("Japanese (日本語)", "Japanese"),
             questionary.Choice("Korean (한국어)", "Korean"),

@@ -30,7 +30,7 @@ DEFAULT_CONFIG = {
     "checkpoint_enabled": False,
     # Output language for analyst reports and final decision
     # Internal agent debate stays in English for reasoning quality
-    "output_language": "Indonesian",
+    "output_language": "English",
     # Market hint for news/ticker handling. "ID" applies the .JK suffix to
     # bare IDX tickers and uses Bahasa Indonesia queries for macro news.
     # Set to None to disable market-specific behavior.

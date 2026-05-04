@@ -926,6 +926,39 @@ def format_tool_args(args, max_length=80) -> str:
         return result[:max_length - 3] + "..."
     return result
 
+def check_report_quality(final_state: dict) -> list[tuple[str, str]]:
+    """Inspect analyst reports for empty or data-failure markers.
+
+    Returns a list of (section_label, reason) for any report that looks like it
+    failed to retrieve real data. Empty list means all clear.
+    """
+    sections = {
+        "market_report": "Market Analyst",
+        "sentiment_report": "Social Analyst",
+        "news_report": "News Analyst",
+        "fundamentals_report": "Fundamentals Analyst",
+    }
+    failure_markers = (
+        "no data found",
+        "no news found",
+        "error fetching",
+        "no stock data",
+        "could not retrieve",
+        "unable to retrieve",
+    )
+    issues: list[tuple[str, str]] = []
+    for key, label in sections.items():
+        report = (final_state.get(key) or "").strip()
+        if not report:
+            issues.append((label, "report is empty"))
+            continue
+        lower = report.lower()
+        # Short report dominated by a failure marker -> data missing.
+        if len(report) < 600 and any(m in lower for m in failure_markers):
+            issues.append((label, "data fetch failed (short report with error markers)"))
+    return issues
+
+
 def run_analysis(checkpoint: bool = False):
     # First get all user selections
     selections = get_user_selections()
@@ -1154,6 +1187,20 @@ def run_analysis(checkpoint: bool = False):
 
         # Get final state and decision
         final_state = trace[-1]
+
+        # Data-quality checkpoint: if any analyst report is empty or signals
+        # missing data, the trader's decision will be unreliable. Surface this
+        # before the user reads the recommendation.
+        data_issues = check_report_quality(final_state)
+        if data_issues:
+            console.print("\n[bold red]⚠ Data quality issues detected:[/bold red]")
+            for section, reason in data_issues:
+                console.print(f"  [yellow]•[/yellow] {section}: {reason}")
+            console.print(
+                "[dim]The trading decision below may be unreliable because one or "
+                "more analysts could not retrieve real data.[/dim]\n"
+            )
+
         decision = graph.process_signal(final_state["final_trade_decision"])
 
         # Update all agent statuses to completed
