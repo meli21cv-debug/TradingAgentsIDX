@@ -188,6 +188,22 @@ class TradingAgentsGraph:
             ),
         }
 
+    def _fetch_latest_close(self, ticker: str) -> Optional[str]:
+        """Return a one-line 'price (date)' string for the most recent close,
+        or None on failure. Applies the configured market suffix if needed."""
+        from tradingagents.dataflows.market_utils import apply_market_suffix
+        symbol = apply_market_suffix(ticker)
+        try:
+            hist = yf.Ticker(symbol).history(period="5d")
+            if hist is None or len(hist) == 0:
+                return None
+            last_price = float(hist["Close"].iloc[-1])
+            last_date = hist.index[-1].strftime("%Y-%m-%d")
+            return f"{last_price:.2f} (as of {last_date})"
+        except Exception as e:
+            logger.warning("Could not fetch latest close for %s: %s", symbol, e)
+            return None
+
     def _benchmark_symbol(self) -> str:
         """Pick the alpha benchmark based on the configured market.
 
@@ -318,8 +334,12 @@ class TradingAgentsGraph:
         """Execute the graph and write the resulting state to disk and memory log."""
         # Initialize state — inject memory log context for PM.
         past_context = self.memory_log.get_past_context(company_name)
+        # Fetch current price once up front so every agent sees the same anchor
+        # (rather than relying on whatever the Market Analyst chose to surface).
+        current_price = self._fetch_latest_close(company_name)
         init_agent_state = self.propagator.create_initial_state(
-            company_name, trade_date, past_context=past_context
+            company_name, trade_date, past_context=past_context,
+            current_price=current_price,
         )
         args = self.propagator.get_graph_args()
 

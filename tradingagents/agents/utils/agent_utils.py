@@ -121,14 +121,21 @@ def get_analyst_preamble() -> str:
     return _ANALYST_PREAMBLE
 
 
-def build_instrument_context(ticker: str) -> str:
-    """Describe the exact instrument so agents preserve exchange-qualified tickers."""
+def build_instrument_context(ticker: str, current_price: str = "") -> str:
+    """Describe the exact instrument so agents preserve exchange-qualified tickers
+    and share the same current-price anchor."""
     from tradingagents.dataflows.config import get_config
     base = (
         f"The instrument to analyze is `{ticker}`. "
         "Use this exact ticker in every tool call, report, and recommendation, "
         "preserving any exchange suffix (e.g. `.TO`, `.L`, `.HK`, `.T`, `.JK`)."
     )
+    if current_price:
+        base += (
+            f" Latest close: {current_price}. Use this as the current-price "
+            "anchor when discussing entry/stop/target zones, % moves, and "
+            "valuation; do not assume a different price."
+        )
     if (get_config().get("market") or "").upper() == "ID":
         base += (
             " This is an Indonesian (IDX) stock. When news searches return little, "
