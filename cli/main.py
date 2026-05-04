@@ -625,11 +625,18 @@ def _extract_decision_summary(final_state: dict) -> str:
     """
     import re
     pm_text = final_state.get("final_trade_decision") or ""
-    rating_match = re.search(r"\*\*Rating\*\*:\s*([A-Za-z]+)", pm_text)
+    # Tolerate the multiple shapes the PM emits: structured renderer produces
+    #   **Rating**: Buy
+    # but free-text LLM output often produces variants like:
+    #   **Rating: BUY**     or     **Rating:** Buy     or     Rating: Buy
+    rating_match = re.search(
+        r"(?i)\*{0,2}\s*Rating\s*\*{0,2}\s*:\s*\*{0,2}\s*([A-Za-z]+)",
+        pm_text,
+    )
     if rating_match:
         rating = rating_match.group(1).strip().upper()
     else:
-        # Fallback: grep for the legacy stop-signal line
+        # Fallback: legacy stop-signal line
         m = re.search(r"FINAL TRANSACTION PROPOSAL:\s*\*\*([A-Z/]+)\*\*", pm_text)
         rating = m.group(1).strip().upper() if m else "UNKNOWN"
 
