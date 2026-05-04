@@ -1,5 +1,6 @@
 from typing import Optional
 import datetime
+import os
 import typer
 from pathlib import Path
 from functools import wraps
@@ -1259,7 +1260,13 @@ def run_analysis(checkpoint: bool = False):
 
     # Always save the report to the default location.
     timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-    save_path = Path.cwd() / "reports" / f"{selections['ticker']}_{timestamp}"
+    # Default save location: Google Drive folder, overridable via
+    # the TRADINGAGENTS_REPORTS_DIR environment variable.
+    reports_root = Path(os.environ.get(
+        "TRADINGAGENTS_REPORTS_DIR",
+        "~/TradingAgents/reports",
+    ))
+    save_path = reports_root / f"{selections['ticker']}_{timestamp}"
     try:
         report_file = save_report_to_disk(final_state, selections["ticker"], save_path)
         console.print(f"\n[green]✓ Report saved to:[/green] {save_path.resolve()}")
