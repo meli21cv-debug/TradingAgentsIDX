@@ -281,13 +281,15 @@ def update_display(layout, spinner_text=None, stats_handler=None, start_time=Non
     progress_table.add_column("Agent", style="green", justify="center", width=20)
     progress_table.add_column("Status", style="yellow", justify="center", width=20)
 
-    # Group agents by team - filter to only include agents in agent_status
+    # Group agents by team - filter to only include agents in agent_status.
+    # Display order for the analyst row mirrors execution order (Fundamentals
+    # first, then Market, News, Smart Money).
     all_teams = {
         "Analyst Team": [
-            "Market Analyst",
-            "Smart Money Analyst",
-            "News Analyst",
             "Fundamentals Analyst",
+            "Market Analyst",
+            "News Analyst",
+            "Smart Money Analyst",
         ],
         "Research Team": ["Bull Researcher", "Bear Researcher", "Research Manager"],
         "Trading Team": ["Trader"],
