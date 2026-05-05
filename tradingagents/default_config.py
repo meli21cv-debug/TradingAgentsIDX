@@ -47,7 +47,7 @@ DEFAULT_CONFIG = {
     "data_vendors": {
         "core_stock_apis": "yfinance",       # Options: alpha_vantage, yfinance
         "technical_indicators": "yfinance",  # Options: alpha_vantage, yfinance
-        "fundamental_data": "yfinance",      # Options: alpha_vantage, yfinance
+        "fundamental_data": "yahooquery,yfinance",  # yahooquery primary (richer IDX coverage), yfinance fallback
         "news_data": "google_news_id,yfinance",  # Options: google_news_id, alpha_vantage, yfinance
     },
     # Tool-level configuration (takes precedence over category-level)

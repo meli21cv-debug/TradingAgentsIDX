@@ -12,6 +12,12 @@ from .y_finance import (
 )
 from .yfinance_news import get_news_yfinance, get_global_news_yfinance
 from .google_news_id import get_news_google_id, get_global_news_google_id
+from .yahooquery_fundamentals import (
+    get_fundamentals as get_yahooquery_fundamentals,
+    get_balance_sheet as get_yahooquery_balance_sheet,
+    get_cashflow as get_yahooquery_cashflow,
+    get_income_statement as get_yahooquery_income_statement,
+)
 from .alpha_vantage import (
     get_stock as get_alpha_vantage_stock,
     get_indicator as get_alpha_vantage_indicator,
@@ -65,6 +71,7 @@ VENDOR_LIST = [
     "yfinance",
     "alpha_vantage",
     "google_news_id",
+    "yahooquery",
 ]
 
 # Mapping of methods to their vendor-specific implementations
@@ -81,18 +88,22 @@ VENDOR_METHODS = {
     },
     # fundamental_data
     "get_fundamentals": {
+        "yahooquery": get_yahooquery_fundamentals,
         "alpha_vantage": get_alpha_vantage_fundamentals,
         "yfinance": get_yfinance_fundamentals,
     },
     "get_balance_sheet": {
+        "yahooquery": get_yahooquery_balance_sheet,
         "alpha_vantage": get_alpha_vantage_balance_sheet,
         "yfinance": get_yfinance_balance_sheet,
     },
     "get_cashflow": {
+        "yahooquery": get_yahooquery_cashflow,
         "alpha_vantage": get_alpha_vantage_cashflow,
         "yfinance": get_yfinance_cashflow,
     },
     "get_income_statement": {
+        "yahooquery": get_yahooquery_income_statement,
         "alpha_vantage": get_alpha_vantage_income_statement,
         "yfinance": get_yfinance_income_statement,
     },
