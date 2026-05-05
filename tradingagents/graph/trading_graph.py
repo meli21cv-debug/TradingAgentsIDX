@@ -190,16 +190,25 @@ class TradingAgentsGraph:
 
     def _fetch_latest_close(self, ticker: str) -> Optional[str]:
         """Return a one-line 'price (date)' string for the most recent close,
-        or None on failure. Applies the configured market suffix if needed."""
+        or None on failure. Includes a [STALE: N days old] flag if the last
+        available close is more than 2 calendar days behind today — useful
+        for IDX names where Yahoo's data sometimes lags."""
         from tradingagents.dataflows.market_utils import apply_market_suffix
         symbol = apply_market_suffix(ticker)
         try:
-            hist = yf.Ticker(symbol).history(period="5d")
+            hist = yf.Ticker(symbol).history(period="10d")
             if hist is None or len(hist) == 0:
                 return None
             last_price = float(hist["Close"].iloc[-1])
-            last_date = hist.index[-1].strftime("%Y-%m-%d")
-            return f"{last_price:.2f} (as of {last_date})"
+            last_dt = hist.index[-1]
+            last_date = last_dt.strftime("%Y-%m-%d")
+            today = datetime.now(last_dt.tzinfo) if last_dt.tzinfo else datetime.now()
+            days_old = (today.date() - last_dt.date()).days
+            stale = ""
+            # >2 calendar days old. Tolerates one weekend; flags real lag.
+            if days_old > 2:
+                stale = f" [STALE: {days_old} days old per yfinance — data source may be lagging the actual exchange]"
+            return f"{last_price:.2f} (as of {last_date}){stale}"
         except Exception as e:
             logger.warning("Could not fetch latest close for %s: %s", symbol, e)
             return None

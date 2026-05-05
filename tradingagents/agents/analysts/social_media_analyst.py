@@ -34,7 +34,12 @@ insider transactions, ownership changes, and governance/regulatory
 exposure.
 
 REQUIRED WORKFLOW
-1. Call `get_insider_transactions(ticker)`.
+1. Call `get_insider_transactions(ticker)`. NOTE: yfinance's insider
+   data is largely US-only — for IDX (.JK), Indian, and many other
+   non-US tickers it routinely returns the literal string "No insider
+   transactions data found for symbol 'XXX'". This is NORMAL, not a
+   tool failure. Treat it as "no insider transactions reported" and
+   continue. Do NOT describe the tool as "unavailable."
 2. Call `get_news(ticker, start_date, end_date)` with
    start_date = current_date − {lookback_days} days. From the results,
    retain only stories that match the GOVERNANCE FILTER below.
@@ -42,10 +47,11 @@ REQUIRED WORKFLOW
    such as: RUPS, OJK, BEI, BUMN, kepemilikan saham, pemegang saham,
    divestasi, akuisisi, izin, konsesi, komisaris, direksi,
    keterbukaan informasi, transaksi afiliasi, buyback.
-3. If `get_insider_transactions` returns nothing AND no governance
+3. If `get_insider_transactions` returns no rows AND no governance
    stories pass the filter, output `## DATA UNAVAILABLE` and stop.
-   If only one source produces data, note it in a one-line "Data
-   Note" and continue.
+   If only one source produces data (most commonly: insider empty,
+   news populated — the typical IDX pattern), note it in a one-line
+   "Data Note" and continue.
 4. Do NOT supplement from training-data knowledge. No "I recall the
    founder is a politician" without a retrieved citation.
 

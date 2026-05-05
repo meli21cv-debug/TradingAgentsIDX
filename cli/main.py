@@ -786,6 +786,9 @@ def save_report_to_disk(final_state, ticker: str, save_path: Path, llm=None):
             (portfolio_dir / "decision.md").write_text(risk["judge_decision"], encoding="utf-8")
             sections.append(f"## V. Portfolio Manager Decision\n\n### Portfolio Manager\n{risk['judge_decision']}")
 
+    # Append a Data Sources note so the user knows where each input came from.
+    sections.append(_build_data_sources_note(final_state))
+
     # Write consolidated report. Filename "{TICKER} {DATE} {CONCLUSION}.md"
     # where CONCLUSION is extracted from the last 100 lines of the report by
     # the quick-thinking LLM (more robust than regex against free-text PM
@@ -1004,6 +1007,38 @@ def format_tool_args(args, max_length=80) -> str:
     if len(result) > max_length:
         return result[:max_length - 3] + "..."
     return result
+
+def _build_data_sources_note(final_state: dict) -> str:
+    """Render a transparent note describing where the numbers came from.
+
+    Helps the reader spot when a 'wrong' number is actually a data-source
+    issue (e.g., yfinance lag) vs. an analyst hallucination.
+    """
+    current_price = final_state.get("current_price", "") or "n/a"
+    return (
+        "## VI. Data Sources & Caveats\n\n"
+        "These are the underlying data sources used by each analyst. When\n"
+        "results look wrong, the issue is usually here — not analyst error.\n\n"
+        "| Analyst | Tool(s) | Backing source | Known limitations |\n"
+        "|---|---|---|---|\n"
+        "| Market | get_stock_data, get_indicators | **yfinance** (Yahoo Finance) | "
+        "Can lag the actual IDX exchange by 1+ days; split adjustments occasionally inconsistent. |\n"
+        "| Fundamentals | get_fundamentals, get_*_statement | **yfinance** | "
+        "Coverage is patchy for IDX names — major LQ45 tickers are usually fine; "
+        "smaller caps may be missing or stale. Numbers come from Yahoo's scrape of filings, not directly from IDX/OJK. |\n"
+        "| News | get_news, get_global_news | **Google News RSS (hl=id, gl=ID)** + Yahoo Finance per-ticker RSS | "
+        "Covers Indonesian outlets (Detik, Kontan, CNBC ID, Bisnis, Investor.id, Bareksa). "
+        "Does NOT include primary IDX disclosures (keterbukaan informasi) directly — only via news re-coverage. |\n"
+        "| Smart Money & Governance | get_insider_transactions, get_news | **yfinance** insider feed (US-only — "
+        "almost always empty for IDX) + **Google News** with governance keyword filter | "
+        "Insider data is effectively absent for IDX tickers. Ownership/control signal comes entirely from news. |\n\n"
+        f"**Current-price anchor used by all agents this run:** {current_price}\n\n"
+        "**If the numbers in this report don't match Stockbit / RTI / your broker:**\n"
+        "- Check the timestamp on the price anchor above. yfinance for IDX can lag.\n"
+        "- Fundamentals figures come from Yahoo's scrape — cross-check with idx.co.id annual report PDFs for important decisions.\n"
+        "- The system explicitly does NOT pull data from idx.co.id directly (Cloudflare-walled), KSEI, OJK, or Stockbit.\n"
+    )
+
 
 def check_report_quality(final_state: dict) -> list[tuple[str, str]]:
     """Inspect analyst reports for empty or data-failure markers.
