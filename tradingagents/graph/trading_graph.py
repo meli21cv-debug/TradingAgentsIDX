@@ -52,7 +52,7 @@ class TradingAgentsGraph:
 
     def __init__(
         self,
-        selected_analysts=["market", "social", "news", "fundamentals"],
+        selected_analysts=["fundamentals", "market", "news", "social"],
         debug=False,
         config: Dict[str, Any] = None,
         callbacks: Optional[List] = None,
@@ -189,12 +189,37 @@ class TradingAgentsGraph:
         }
 
     def _fetch_latest_close(self, ticker: str) -> Optional[str]:
-        """Return a one-line 'price (date)' string for the most recent close,
-        or None on failure. Includes a [STALE: N days old] flag if the last
-        available close is more than 2 calendar days behind today — useful
-        for IDX names where Yahoo's data sometimes lags."""
+        """Return a one-line 'price (date)' string for the most recent close
+        from yahooquery (more current than yfinance for IDX names), with a
+        yfinance fallback. Includes a [STALE: N days old] flag if the last
+        available close is more than 2 calendar days behind today."""
         from tradingagents.dataflows.market_utils import apply_market_suffix
         symbol = apply_market_suffix(ticker)
+
+        # Primary: yahooquery — typically returns a more current intraday quote
+        # than yfinance's daily history endpoint for IDX names.
+        try:
+            from yahooquery import Ticker as YqTicker
+            yq = YqTicker(symbol)
+            price_block = yq.price.get(symbol, {}) if isinstance(yq.price, dict) else {}
+            rmp = price_block.get("regularMarketPrice")
+            rmt = price_block.get("regularMarketTime")  # e.g. "2026-05-04 11:14:51"
+            if rmp is not None and rmt:
+                # Compute staleness vs today.
+                try:
+                    last_dt = datetime.strptime(str(rmt)[:19], "%Y-%m-%d %H:%M:%S")
+                except Exception:
+                    last_dt = None
+                stale = ""
+                if last_dt is not None:
+                    days_old = (datetime.now().date() - last_dt.date()).days
+                    if days_old > 2:
+                        stale = f" [STALE: {days_old} days old per Yahoo — data source may lag the actual exchange]"
+                return f"{float(rmp):.2f} (as of {str(rmt)[:10]}, source: yahooquery){stale}"
+        except Exception as e:
+            logger.warning("yahooquery price fetch failed for %s: %s", symbol, e)
+
+        # Fallback: yfinance daily history.
         try:
             hist = yf.Ticker(symbol).history(period="10d")
             if hist is None or len(hist) == 0:
@@ -204,11 +229,8 @@ class TradingAgentsGraph:
             last_date = last_dt.strftime("%Y-%m-%d")
             today = datetime.now(last_dt.tzinfo) if last_dt.tzinfo else datetime.now()
             days_old = (today.date() - last_dt.date()).days
-            stale = ""
-            # >2 calendar days old. Tolerates one weekend; flags real lag.
-            if days_old > 2:
-                stale = f" [STALE: {days_old} days old per yfinance — data source may be lagging the actual exchange]"
-            return f"{last_price:.2f} (as of {last_date}){stale}"
+            stale = f" [STALE: {days_old} days old per yfinance]" if days_old > 2 else ""
+            return f"{last_price:.2f} (as of {last_date}, source: yfinance){stale}"
         except Exception as e:
             logger.warning("Could not fetch latest close for %s: %s", symbol, e)
             return None

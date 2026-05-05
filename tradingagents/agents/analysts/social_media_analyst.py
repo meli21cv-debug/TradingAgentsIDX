@@ -2,7 +2,6 @@ from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from tradingagents.agents.utils.agent_utils import (
     build_instrument_context,
     get_analyst_preamble,
-    get_insider_transactions,
     get_language_instruction,
     get_news,
     get_news_lookback_days,
@@ -17,7 +16,6 @@ def create_social_media_analyst(llm):
         instrument_context = build_instrument_context(state["company_of_interest"], state.get("current_price", ""))
 
         tools = [
-            get_insider_transactions,
             get_news,
         ]
 
@@ -34,26 +32,24 @@ insider transactions, ownership changes, and governance/regulatory
 exposure.
 
 REQUIRED WORKFLOW
-1. Call `get_insider_transactions(ticker)`. NOTE: yfinance's insider
-   data is largely US-only — for IDX (.JK), Indian, and many other
-   non-US tickers it routinely returns the literal string "No insider
-   transactions data found for symbol 'XXX'". This is NORMAL, not a
-   tool failure. Treat it as "no insider transactions reported" and
-   continue. Do NOT describe the tool as "unavailable."
-2. Call `get_news(ticker, start_date, end_date)` with
+1. Call `get_news(ticker, start_date, end_date)` with
    start_date = current_date − {lookback_days} days. From the results,
    retain only stories that match the GOVERNANCE FILTER below.
    For Indonesian (IDX) tickers, also try Bahasa Indonesia keywords
    such as: RUPS, OJK, BEI, BUMN, kepemilikan saham, pemegang saham,
    divestasi, akuisisi, izin, konsesi, komisaris, direksi,
    keterbukaan informasi, transaksi afiliasi, buyback.
-3. If `get_insider_transactions` returns no rows AND no governance
-   stories pass the filter, output `## DATA UNAVAILABLE` and stop.
-   If only one source produces data (most commonly: insider empty,
-   news populated — the typical IDX pattern), note it in a one-line
-   "Data Note" and continue.
-4. Do NOT supplement from training-data knowledge. No "I recall the
+2. If no governance stories pass the filter, output `## DATA
+   UNAVAILABLE` and stop.
+3. Do NOT supplement from training-data knowledge. No "I recall the
    founder is a politician" without a retrieved citation.
+
+NOTE ON INSIDER DATA: There is no working public API for IDX insider
+transactions. yfinance and yahooquery both pull from Yahoo's US-centric
+insider feed which is empty for nearly all .JK names. This analyst
+relies entirely on news for governance signal. If a story mentions a
+named director or commissioner buying/selling shares, treat that
+mention as your insider signal — that is the only insider data we get.
 
 GOVERNANCE FILTER — a story qualifies if it covers any of:
 - Insider buy/sell, share pledges, lock-up changes
@@ -113,14 +109,17 @@ DEFINITIONS
 REPORT STRUCTURE (total report ≤ {total_word_cap} words)
 
 ## Data Note
-  One line if any source failed. Skip if both succeeded.
+  One line: how many news stories retrieved, how many passed the
+  governance filter. Skip if ≥ 5 governance stories exist.
 
-## Insider Activity
-  Net flow direction and magnitude. Distinct buyer count vs. seller
-  count. Cluster events. Transaction quality breakdown (open-market
-  vs. planned vs. exercise-and-sell). If no insider transactions
-  retrieved, write "No insider transactions reported in retrieved
-  data" — do NOT infer.
+## Insider Activity (from news only)
+  Any mention in retrieved news of named directors, commissioners,
+  or major shareholders buying or selling shares. Each item cites
+  source and date. If none retrieved, write "No insider transactions
+  surfaced in retrieved news. Note: there is no working public API
+  for IDX insider data — Yahoo's US-centric feed is empty for .JK
+  tickers, so the absence of insider activity here is a data
+  limitation, not necessarily a true absence of activity."
 
 ## Ownership and Control
   Material changes in major holders, share class changes, free-float
