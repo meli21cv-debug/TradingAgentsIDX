@@ -878,8 +878,9 @@ def update_research_team_status(status):
         message_buffer.update_agent_status(agent, status)
 
 
-# Ordered list of analysts for status transitions
-ANALYST_ORDER = ["market", "social", "news", "fundamentals"]
+# Ordered list of analysts for status transitions — must match execution order
+# defined in graph/setup.py and cli/utils.py ANALYST_ORDER.
+ANALYST_ORDER = ["fundamentals", "market", "news", "social"]
 ANALYST_AGENT_NAMES = {
     "market": "Market Analyst",
     "social": "Smart Money Analyst",
