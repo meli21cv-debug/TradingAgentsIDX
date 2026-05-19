@@ -12,6 +12,13 @@ from tradingagents.agents.utils.structured import (
     bind_structured,
     invoke_structured_or_freetext,
 )
+from tradingagents.dataflows.config import get_config
+from tradingagents.dataflows.idx_trading_rules import (
+    _parse_price,
+    adjust_proposal_for_idx,
+    format_rules_block,
+    trader_idx_footer,
+)
 
 
 def create_trader(llm):
@@ -19,13 +26,46 @@ def create_trader(llm):
 
     def trader_node(state, name):
         company_name = state["company_of_interest"]
-        instrument_context = build_instrument_context(company_name, state.get("current_price", ""))
+        current_price = state.get("current_price", "")
+        instrument_context = build_instrument_context(company_name, current_price)
         investment_plan = state["investment_plan"]
 
         market_report = state.get("market_report", "")
         sentiment_report = state.get("sentiment_report", "")
         news_report = state.get("news_report", "")
         fundamentals_report = state.get("fundamentals_report", "")
+
+        # IDX execution-rules block: when the active market is Indonesia,
+        # the Trader's entry/stop must land on legal ticks and sizing
+        # must be in whole lots of 100. We inject the rules into the
+        # prompt and snap prices post-hoc as defence-in-depth.
+        is_idx = (get_config().get("market") or "").upper() == "ID"
+        idx_rules_prompt = ""
+        if is_idx:
+            ref_price = _parse_price(current_price)
+            if ref_price is not None:
+                idx_rules_prompt = (
+                    "\n\nIDX EXECUTION CONSTRAINTS (mandatory)\n"
+                    f"- {format_rules_block(ref_price)}\n"
+                    "- Quote `entry_price` and `stop_loss` as integer rupiah "
+                    "values on the legal tick. Do NOT use fractional rupiah.\n"
+                    "- When describing position size, state share count as "
+                    "whole lots of 100 (e.g. '5 lots = 500 shares'), not "
+                    "individual shares.\n"
+                    "- A target above the ARA ceiling or stop below the ARB "
+                    "floor cannot fill in a single session — call out the "
+                    "multi-day path explicitly if your levels exceed the "
+                    "next-session bands."
+                )
+            else:
+                idx_rules_prompt = (
+                    "\n\nIDX EXECUTION CONSTRAINTS (mandatory)\n"
+                    "- Quote `entry_price` and `stop_loss` as integer rupiah "
+                    "values on legal IDX ticks (Rp1 below Rp200, Rp2 in "
+                    "Rp200-500, Rp5 in Rp500-2000, Rp10 in Rp2000-5000, "
+                    "Rp25 above Rp5000).\n"
+                    "- State position size in whole lots of 100 shares."
+                )
 
         messages = [
             {
@@ -87,7 +127,8 @@ def create_trader(llm):
                     "- Entry zone, stop level, target level: each tied to a "
                     "cited indicator value.\n"
                     "- Time horizon and review trigger.\n"
-                    "- Invalidation conditions: specific, observable.\n\n"
+                    "- Invalidation conditions: specific, observable."
+                    f"{idx_rules_prompt}\n\n"
                     "---\n\n"
                     f"Research Manager's investment plan:\n{investment_plan}\n\n"
                     "---\n\n"
@@ -100,11 +141,24 @@ def create_trader(llm):
             },
         ]
 
+        def _render(proposal):
+            # On IDX, snap quoted prices to legal ticks before rendering and
+            # append the rules footer so downstream agents and saved reports
+            # carry the same constraint context.
+            if is_idx:
+                proposal = adjust_proposal_for_idx(proposal)
+            rendered = render_trader_proposal(proposal)
+            if is_idx:
+                footer = trader_idx_footer(current_price)
+                if footer:
+                    rendered += footer
+            return rendered
+
         trader_plan = invoke_structured_or_freetext(
             structured_llm,
             llm,
             messages,
-            render_trader_proposal,
+            _render,
             "Trader",
         )
 

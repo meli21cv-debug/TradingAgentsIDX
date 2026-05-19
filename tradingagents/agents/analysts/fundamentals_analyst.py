@@ -4,6 +4,7 @@ from tradingagents.agents.utils.agent_utils import (
     get_analyst_preamble,
     get_balance_sheet,
     get_cashflow,
+    get_corporate_actions,
     get_fundamentals,
     get_income_statement,
     get_insider_transactions,
@@ -23,6 +24,7 @@ def create_fundamentals_analyst(llm):
             get_balance_sheet,
             get_cashflow,
             get_income_statement,
+            get_corporate_actions,
         ]
 
         total_word_cap = get_total_word_cap()
@@ -42,9 +44,15 @@ REQUIRED WORKFLOW
 4. Call `get_cashflow(ticker, freq="quarterly")` — at least 8 quarters.
 5. Call `get_income_statement(ticker, freq="annual")` for the last
    3 fiscal years (for full-year trend baselines).
-6. If `get_fundamentals` errors AND at least two of the statement
+6. Call `get_corporate_actions(ticker, curr_date)` to surface
+   recent and upcoming dividends, splits, earnings dates, and
+   (for IDX names) RUPS / rights-issue / buyback / M&A news within
+   ±90 days. Read this BEFORE writing valuation — a pending rights
+   issue, large buyback, or scheduled dividend can move the
+   per-share base your multiples reference.
+7. If `get_fundamentals` errors AND at least two of the statement
    calls also fail, output `## DATA UNAVAILABLE` and stop.
-7. If only one or two calls fail, note the missing data in a
+8. If only one or two calls fail, note the missing data in a
    one-line "Data Note" at the top and proceed with what is
    available. Do NOT infer missing line items from training data.
 
@@ -164,6 +172,15 @@ REPORT STRUCTURE (in this order; total report ≤ {total_word_cap} words)
   All available multiples with own-history percentile. Sector
   comparison only if data is in retrieved fundamentals.
   Dividend payout ratio and sustainability (dividend / FCF).
+
+## Corporate Actions
+  From `get_corporate_actions`: recent and upcoming dividends,
+  splits, earnings dates, and (for IDX names) RUPS / rights-issue
+  / buyback / M&A headlines. List in chronological order with
+  source. Call out any action that materially changes share count
+  (rights issue, buyback, split) or near-term cash (dividend, tender
+  offer). If no actions surface, state "No material corporate
+  actions in the ±90-day window."
 
 ## Fair Value Estimate (MANDATORY)
   Triangulate a fair-value-per-share range using ONLY figures

@@ -13,6 +13,7 @@ from email.utils import parsedate_to_datetime
 import requests
 from dateutil.relativedelta import relativedelta
 
+from .idx_news_rss import fetch_idx_rss, filter_by_keywords
 from .market_utils import global_news_queries, strip_market_suffix
 
 
@@ -160,6 +161,26 @@ def get_news_google_id(ticker: str, start_date: str, end_date: str) -> str:
     except Exception:
         errors += 1
 
+    # Native Indonesian publishers (Bisnis, Kontan, CNBC Indonesia, Detik,
+    # Investor.id, Emiten News). Pull the latest items from each feed and
+    # keep only those that mention the ticker — these often surface
+    # corporate actions and regulatory news days before Google News.
+    try:
+        rss_articles, rss_errs = fetch_idx_rss(per_feed_limit=25)
+        ticker_kw = [bare, f"saham {bare}", f"{bare}.JK", f"{bare}.jk"]
+        for a in filter_by_keywords(rss_articles, ticker_kw):
+            key = a.get("link") or a.get("title")
+            if not key or key in seen_keys:
+                continue
+            seen_keys.add(key)
+            merged.append(a)
+        # Count failed-feed loads as a single source error so the
+        # "all sources errored" guard below can still trigger.
+        if rss_errs and not rss_articles:
+            errors += 1
+    except Exception:
+        errors += 1
+
     if not merged:
         if errors == total_sources:
             return f"Error fetching news for {ticker}"
@@ -201,6 +222,25 @@ def get_global_news_google_id(curr_date: str, look_back_days: int = 7, limit: in
                 break
     except Exception as e:
         return f"Error fetching global news (ID): {e}"
+
+    # Top up with native Indonesian market headlines (unfiltered, latest
+    # from each feed). These give better macro/sector context for IHSG
+    # than Google News alone.
+    if len(collected) < limit:
+        try:
+            rss_articles, _errs = fetch_idx_rss(per_feed_limit=10)
+            for a in rss_articles:
+                key = a.get("title") or a.get("link")
+                if not key or key in seen:
+                    continue
+                if not _within_range(a, start_dt, curr_dt):
+                    continue
+                seen.add(key)
+                collected.append(a)
+                if len(collected) >= limit:
+                    break
+        except Exception:
+            pass
 
     if not collected:
         return f"No global news found for {curr_date}"
